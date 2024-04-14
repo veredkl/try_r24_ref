@@ -1,0 +1,70 @@
+---
+title: "novel allele"
+execute:
+  echo: false
+  warning: false
+  message: false
+format: html
+---
+
+```{r}
+source("functions.R")
+```
+
+```{r}
+
+novel_data <- data_ %>%
+  filter(grepl("_", allele))
+
+summary_data <- novel_data %>%
+  group_by(allele, k_diff) %>%
+  summarise(count = n(), subject =subject , genotyped_allele = genotyped_allele,in_genomic = in_genomic, alleles = alleles, counts=counts,genotyped_alleles = genotyped_alleles)
+
+summary_data <- summary_data %>%
+  mutate(prefix = sub("_.*", "", allele))
+
+# Ensure the data is sorted by the prefix so that the alternation works correctly
+summary_data <- summary_data %>%
+  arrange(prefix)
+
+# Create a logical vector that is TRUE when the prefix changes
+change_flag <- c(TRUE, diff(as.integer(factor(summary_data$prefix))) != 0)
+
+# Use cumsum to create an alternating sequence of 0s and 1s
+summary_data$alternating_color <- cumsum(change_flag) %% 2
+
+u<-unique(summary_data[, c("allele", "alternating_color")])
+
+color_breaks <- c(0, 1, 3, 5, 10, 20, 50, Inf)
+# Define custom colors for each interval
+color_palette <- c("#FF0000", "#FFA500", "#FFFF00", "#00FF00", "#00FFFF", "#0000FF", "#800080")
+label_colors <- c("black", "red")
+
+
+```
+
+```{r}
+p<-ggplot(summary_data, aes(x = allele, y = count, text = paste0(paste("</br>genotyped_allele : ",genotyped_allele,                                               "</br>Subject: ", subject,
+                           "</br>lk: ", k_diff,
+                           "</br>in_genomic : ", in_genomic ,
+                           "</br>alleles: ",alleles,
+                           "</br>counts : ",counts ,
+                           "</br>genotyped_alleles : ",genotyped_alleles)), fill = cut(k_diff, breaks = color_breaks))) +
+  geom_bar(stat = "identity") +
+  labs(title = "",
+       x = "novel allele",
+       y = "number of participant",
+       fill = "lk") +
+  theme_minimal() +
+  scale_fill_manual(values = color_palette, limits = levels(cut(summary_data$k_diff, breaks = color_breaks))) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1,color =  ifelse(u$alternating_color == 1, label_colors[2], label_colors[1])))
+
+ggplotly(p, tooltip = "text") %>%
+  layout(
+    autosize = F,
+    width = 800,
+    height = 600
+  )
+```
+
+

@@ -1,0 +1,14 @@
+{
+  "hash": "cfe63d3eb869c1ba85d5a92fc3deac08",
+  "result": {
+    "markdown": "---\ntitle: 'IGHV1'\nexecute:\n  echo: false\n  warning: false\n  message: false\nformat: html\n---\n\n::: {.cell}\n\n:::\n\n::: {.cell}\n\n:::\n\n|    <center>ASC</center>    |    <center>report</center>    |\n|:--------------------------:|:----------------------------:|",
+    "supporting": [],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}

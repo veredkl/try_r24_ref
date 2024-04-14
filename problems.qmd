@@ -1,0 +1,124 @@
+---
+title: 'AIRRseq genoic disagreement'
+execute:
+  echo: false
+  warning: false
+  message: false
+format: html
+---
+
+
+We identified cases where an allele appears in the repertoire but does not have an exact match in the genome. An 'exact match' means that Digger identified the allele as functional or as an open reading frame (ORF) without any single nucleotide polymorphisms (SNPs), or, in the case of a novel allele, with the same SNP as identified by TIgGER. For each allele exhibiting this type of discrepancy in one or more subjects, we summarized the cases pertaining to that allele:
+
+- yes: Found in the repertoire and exactly matched in the assembly.
+- yes didn't pass lk: Found with low confidence (lk<1) in the repertoire and exactly matched in the assembly.
+- no:  Found in the repertoire but didn't exactly match in the assembly.
+- no didn't pass lk:  Found with low confidence (lk<1) in the repertoire but didn't exactly match in the assembly.
+
+  
+
+```{r}
+source("functions.R")
+```
+
+
+```{r,echo=FALSE}
+num_subjects = length(unique(data_$subject))
+df<-data_[data_$in_genomic=="yes",]
+df_no<-data_[data_$in_genomic=="no",]
+
+load("2024-03-20_gene_igh_names.rda")
+
+ASCs_on_genotype=unique(data_$gene)
+length_ASCs_on_genotype=length(ASCs_on_genotype)
+ASCs_on_genome = unique(df$gene)
+length_ASCs_not_represented = length(setdiff(ASCs_on_genotype,ASCs_on_genome))
+
+load("2024-03-20_allele_igh_names.rda")
+
+alleles_on_genotype=unique(data_$allele)
+length_alleles_on_genotype=length(alleles_on_genotype)
+alleles_on_genome = unique(df$allele)
+no_on_genome = unique(df_no$allele)
+alleles_not_represented = setdiff(alleles_on_genotype,alleles_on_genome)
+length_alleles_not_represented = length(alleles_not_represented)
+
+alleles_part_on_geno_part_no = setdiff(no_on_genome,alleles_not_represented)
+length_alleles_part_on_geno_part_no = length(alleles_part_on_geno_part_no)
+```
+
+
+In the detailed analysis, it was found that out of the `r length_ASCs_on_genotype` IGHV clusters identified in the AIRRseq genotypes, `r length_ASCs_not_represented` were not identified with exact match in the assembly of any of the `r num_subjects` subjects analyzed. `r length_alleles_not_represented` out of `r length_alleles_on_genotype` IGHV alleles identified in the AIRRseq genotypes were not identified with exact match in any subject assembly. `r length_alleles_part_on_geno_part_no` were identified with exact match in the assembly of some subjects, but not in others.
+
+
+
+```{r}
+library(patchwork)
+
+plots_list <- list() 
+i=0
+
+for(allele in unique(data_$allele)) {
+  df<-data_[data_$allele==allele,]
+  allele_data<-table(df$in_genomic)
+  if ("no" %in% names(allele_data)){
+    i=i+1
+    plot_data <- as.data.frame(allele_data)
+    df$lk_above_1 <- ifelse(df$k_diff < 1, "no", "yes")
+    
+    df <- df %>%
+      mutate(to_fill = case_when(
+        in_genomic == "yes" & lk_above_1 == "yes"    ~ "yes",
+        in_genomic == "yes" & lk_above_1 == "no"  ~ "yes didn't pass lk",
+        in_genomic == "no" & lk_above_1 == "yes"     ~ "no",
+        in_genomic == "no" & lk_above_1 == "no"   ~ "no didn't pass lk",
+        TRUE                                      ~ as.character(NA)
+      ))
+
+    p<-ggplot(df, aes(x = in_genomic, y =  after_stat(count), fill= to_fill,text =
+                     paste("</br>Subject: ", subject,
+                           "</br>lk: ", k_diff,
+                           "</br>in_genomic : ", in_genomic ,
+                           "</br>alleles: ",alleles,
+                           "</br>counts : ",counts ,
+                           "</br>genotyped_alleles : ",genotyped_alleles ))) +
+      geom_bar() +
+      scale_fill_manual(values = c("yes" = alpha("darkblue", 1), "yes didn't pass lk" = alpha("darkblue", 0.5), "no" = alpha("#74A089", 1) , "no didn't pass lk" = alpha("#74A089", 0.5)),
+                        labels = c("found exact in assembly and repertoire","found exact in assembly and repertoire",
+                                   "found in repertoire but not in assembly","found in repertoire but not in assembly")) +
+      labs(fill = "") +
+      labs(title = allele,
+           x = "",
+           y = "Frequency") +
+      theme_minimal() +
+      theme(axis.text.x = element_blank())
+
+    p1<-ggplotly(p, tooltip = "text")
+    
+    plots_list[[i]] <- p1
+  }
+}
+
+```
+
+
+
+
+```{r}
+library(htmltools)
+library(plotly)
+
+html_divs <- lapply(plots_list, function(p) {
+  plot_widget <- plotly::plotly_build(p) %>% as_widget()
+  tags$div(style = "width: 33%;", plot_widget)
+})
+
+html_page <- tags$div(style = "display: flex; flex-wrap: wrap;", html_divs)
+
+```
+
+
+```{r}
+html_page
+```
+

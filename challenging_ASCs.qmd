@@ -1,0 +1,14 @@
+---
+title: "challenging ASCs"
+execute:
+  echo: false
+  warning: false
+  message: false
+format: html
+---
+
+The genotype inference was conducted using a Bayesian method, which accounts for up to four alleles per ASC. However, in a single organism, a genotype can rarely comprise more than four distinct alleles, when multiple gene duplications occur and the loci exhibit heterozygosity both within and between these duplications. Our current analysis suggests that, for some ASCs, the inclusion of more than four alleles per genotype may be required, as can be shown, for example, for subject RFj17 in panel B.
+
+
+
+![ ](r24_new.png)
